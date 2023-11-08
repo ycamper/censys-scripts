@@ -1,3 +1,6 @@
-#!/usr/bin/jq -rf
+#!/usr/bin/jq -f
 
-.ip as $ip | .operating_system | select(.product != null) | [$ip, .product]|@tsv
+{
+    ip: .ip,
+    os: .operating_system | select( .product != null) | .product
+}

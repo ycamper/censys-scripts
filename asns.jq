@@ -1,3 +1,6 @@
-#!/usr/bin/jq -rf
+#!/usr/bin/jq -f
 
-.ip as $ip | .autonomous_system | [$ip, .asn, .name, .bgp_prefix, .country_code, .description]|@tsv 
+{
+    ip: .ip,
+    asn: .autonomous_system | {name: .name, as : .asn }
+}

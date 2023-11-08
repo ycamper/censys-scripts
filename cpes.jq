@@ -1,13 +1,14 @@
-#!/usr/bin/jq -rf
+#!/usr/bin/jq -f
 
+#.service_name
 .ip as $ip   |
- .services[] | 
+ .services[] | .service_name as $sname |  
     select(.software!=null) |
         (
             .port as $port | (
                 .software[] |
                     select(.uniform_resource_identifier!=null) | (
-                        [$ip,$port,.uniform_resource_identifier]
+                        [$ip,$port,$sname,.uniform_resource_identifier]
                     ) | @tsv
             )
         )

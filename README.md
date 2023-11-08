@@ -118,6 +118,19 @@ $ censys view 1.12.246.240 | ./redis-response.jq
 1.12.246.240	6379	(Error: NOAUTH Authentication required.)
 ```
 
+### search-urlize.jq
+
+Turns matched services into its service-based URI
+
+```shell
+$ ./search-urlize.jq <<< $(censys search services.service_name=HTTP)
+http://88.181.231.137:7201
+https://88.181.231.137:9062
+https://88.174.232.219:41302
+http://88.174.232.219:53849
+
+```
+
 ### telnet-banner.jq
 
 ### services.jq
@@ -140,4 +153,23 @@ censys search 'services.service_name=REDIS' --pages 1 | ./search-hosts.jq | whil
 1.12.37.13	5000	(Error: NOAUTH Authentication required.)
 1.12.37.13	5001	(Error: NOAUTH Authentication required.)
 1.12.37.13	5003	(Error: NOAUTH Authentication required.)
+```
+
+Or run through other programs:
+
+```shell
+$ censys search services.service_name=HTTP | ./search-urlize.jq | httpx -path /.env -sc
+
+    __    __  __       _  __
+   / /_  / /_/ /_____ | |/ /
+  / __ \/ __/ __/ __ \|   /
+ / / / / /_/ /_/ /_/ /   |
+/_/ /_/\__/\__/ .___/_/|_|
+             /_/
+
+                projectdiscovery.io
+
+http://154.53.32.142/.env [404]
+http://154.195.41.36:7052/.env [407]
+https://154.61.180.151:80/.env [200]
 ```

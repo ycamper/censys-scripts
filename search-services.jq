@@ -2,6 +2,6 @@
 
 #jq -r '.[]|.ip as $ip|.services[]|[$ip,.port,.service_name]|@tsv'
 .[] |
- .ip as $ip |
+ .ip as $ip | .name as $name |
  .services[] |
-   [$ip, .port, .service_name]|@tsv
+   [$ip, $name, .port, .service_name]|@tsv

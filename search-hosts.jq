@@ -1,3 +1,3 @@
-#!/usr/bin/jq -rf
+#!/usr/bin/jq -f
 
 .[].ip

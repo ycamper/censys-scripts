@@ -8,4 +8,4 @@
     .port,
     .service_name,
     .banner
-] | @tsv
+] | @csv
