@@ -131,6 +131,111 @@ http://88.174.232.219:53849
 
 ```
 
+### dnsdb-format.jq
+
+Not for Censys, but for DNSDB JSON output (passive DNS), this just makes human-readable timestamps:
+
+```shell
+% dnsdbq -j -i 89.147.108.171 | dnsdb-format.jq
+{
+  "count": 206,
+  "time_first": "2023-06-28 04:29:37",
+  "time_last": "2024-09-21 01:18:26",
+  "rrname": "discomania.wiki.",
+  "rrtype": "A",
+  "rdata": [
+    "89.147.108.171"
+  ]
+}
+{
+  "count": 83,
+  "time_first": "2023-08-06 16:08:55",
+  "time_last": "2024-08-02 11:18:39",
+  "rrname": "www.discomania.wiki.",
+  "rrtype": "A",
+  "rdata": [
+    "89.147.108.171"
+  ]
+}
+```
+
+### ips-to-censys.sh
+
+Turn an input of IP addresses into a Censys-searchable string:
+
+```shell
+% printf "1.1.1.1\n2.2.2.2\n3.3.3.3\n" | ips-to-censys.sh
+ip: {1.1.1.1,2.2.2.2,3.3.3.3}
+```
+
+### search-matched-services-short.jq
+
+Parses out the matched services from a query and ouputs a `$IP:$PORT` combo:
+
+```shell
+% censys search --pages 5 'services.banner: "INFO {\"server_id\""' | search-matched-services-short.jq
+38.83.104.147:4222
+162.255.25.14:5222
+162.255.25.14:4222
+176.65.47.69:4222
+149.255.31.168:4223
+68.183.214.85:4222
+103.60.204.109:4223
+94.199.4.53:4222
+159.203.137.93:5489
+106.52.193.141:8300
+144.24.181.188:4743
+```
+
+### search-urlize-json.jq
+
+Like search-urlize.jq, but in JSON format. This is best used with virtual-hosts (name-based hosts) so you can separate the name from the IP
+
+```shell
+ % censys search --pages 1 --virtual-hosts ONLY 'services.service_name=HTTP' | search-urlize-json.jq -cr
+{"host":"http://204.184.58.132:443","hostname":"libproxy.trcc.edu"}
+{"host":"https://142.132.156.20:2096","hostname":"cpanel1.buyfasthosts.com"}
+{"host":"http://142.132.156.20:80","hostname":"cpanel1.buyfasthosts.com"}
+{"host":"https://142.132.156.20:443","hostname":"cpanel1.buyfasthosts.com"}
+{"host":"https://142.132.156.20:2078","hostname":"cpanel1.buyfasthosts.com"}
+```
+
+### filter-duplicate-vhosts.py
+
+Takes input from `search-urlize-json.jq` and filters out duplicate names; results with a bare-IP address take priority.
+
+So let's say I have a query that can match port 443 on both a name-based host and the bare-IP; sometimes we know that the service sitting on the bare-IP is the exact same as the one on the name-based result, without this, a result can be big:
+
+```shell
+ % censys search 'ip: 3.208.127.243 and services.extended_service_name=HTTPS' --virtual-hosts INCLUDE | search-urlize-json.jq -cr
+{"host":"https://3.208.127.243:443","hostname":"null"}
+{"host":"https://3.208.127.243:443","hostname":"hello.n-able.com"}
+{"host":"https://3.208.127.243:443","hostname":"00b51e42-0e1c-41a1-83a7-841f98b90b38.outrch.com"}
+{"host":"https://3.208.127.243:443","hostname":"fa34ec77-402b-458d-a351-4f9c48e774a9.outrch.com"}
+{"host":"https://3.208.127.243:443","hostname":"4883b2ba-05af-47f4-9942-a4b95b4595d4.outrch.com"}
+... snip snip ...
+```
+
+So we just want to get one result for each unique host:
+
+```shell
+ % censys search 'ip: 3.208.127.243 and services.extended_service_name=HTTPS' --virtual-hosts INCLUDE | search-urlize-json.jq -cr | filter-duplicate-vhosts.py
+{"host": "https://3.208.127.243:443", "hostname": "null"}
+```
+
+### vt-ip.go / vt-ip-malicious.jq
+
+`vt-ip.go` is small golang script to query IPs via virus-total (and stay within limits). Also adds a bit of caching.
+`vt-ip-malicious.jq` is just a JQ script that takes the output of `vt-ip.go` and determines if anything has been marked as malicious:
+
+```shell
+% censys search 'labels=c2' | search-hosts.jq -cr | vt-ip - | while read line; do vt-ip-malicious.jq; done
+"194.87.39.116",false
+"185.56.91.30",false
+"1.1.1.1",true
+```
+
+
 ### telnet-banner.jq
 
 ### services.jq
