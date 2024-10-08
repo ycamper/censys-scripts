@@ -38,10 +38,13 @@ func main() {
 				continue
 			}
 			if !first {
-				<-rateLimiter.C
+				<-rateLimiter.C // Wait for the rate limiter
 			}
 			first = false
-			processIP(ip, noCache, cacheDir)
+			if cached := processIP(ip, noCache, cacheDir); cached {
+				first = true
+			}
+
 		}
 		if err := scanner.Err(); err != nil {
 			log.Println("Error reading from stdin:", err)
@@ -51,13 +54,13 @@ func main() {
 	}
 }
 
-func processIP(ip string, noCache bool, cacheDir string) {
+func processIP(ip string, noCache bool, cacheDir string) bool {
 	cacheFile := filepath.Join(cacheDir, ip+".json")
 
 	if !noCache {
 		if data, err := os.ReadFile(cacheFile); err == nil {
 			fmt.Println(string(data))
-			return
+			return true
 		}
 	}
 
@@ -65,7 +68,7 @@ func processIP(ip string, noCache bool, cacheDir string) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Println("Failed to create request:", err)
-		return
+		return false
 	}
 
 	apikey := os.Getenv("VT_API_KEY")
@@ -80,25 +83,27 @@ func processIP(ip string, noCache bool, cacheDir string) {
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Println("Failed to execute request:", err)
-		return
+		return false
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
 		fmt.Printf("Failed to get data: %s\n", res.Status)
-		return
+		return false
 	}
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		log.Println("Failed to read response body:", err)
-		return
+		return false
 	}
 
 	fmt.Println(string(body))
 
 	if err := os.WriteFile(cacheFile, body, 0644); err != nil {
 		log.Println("Failed to write cache file:", err)
-		return
+		return false
 	}
+
+	return false
 }
